@@ -61,7 +61,7 @@ export default function TerminalSite() {
   }, [history]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white rounded-lg font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
+    <div className="min-h-screen bg-slate-900 text-white font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
       <div className="flex flex-col items-center mb-2 w-full max-w-3xl px-6">
         <h1 className="text-4xl font-normal mb-2">tara gallagher</h1>
         <img
