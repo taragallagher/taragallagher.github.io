@@ -42,28 +42,26 @@ export default function TerminalSite() {
   const handleCommand = (e) => {
     e.preventDefault();
     const trimmed = input.trim().toLowerCase();
-    const response =
-  commands[trimmed] || (
-    <>
-      command not found: {trimmed}
-      <br /> <br />
-      Try 'about', 'research', or 'contact'.
-    </>
-  );
-  setHistory((prev) => [...prev, { command: input, response }]);
+    const response = commands[trimmed] || `command not found: ${trimmed}`;
+    setHistory((prev) => [...prev, { command: input, response }]);
     setInput("");
   };
 
   useEffect(() => {
     if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+      // Use smooth scroll and scroll into view for last child
+      const container = outputRef.current;
+      const lastChild = container.lastElementChild;
+      if (lastChild) {
+        lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
     }
   }, [history]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
-      <div className="flex flex-col items-center mb-2 w-full max-w-3xl px-6">
-        <h1 className="text-4xl font-normal mb-2">tara gallagher</h1>
+      <div className="flex flex-col items-center mb-3 w-full max-w-3xl px-6">
+        <h1 className="text-4xl font-normal mb-6">tara gallagher</h1>
         <img
           src="cat.jpg"
           alt="Tara w cat"
@@ -71,32 +69,29 @@ export default function TerminalSite() {
         />
         <p className="text-center text-white text-base">Type 'about', 'research', or 'contact' and press Enter.</p>
       </div>
-      <div className="bg-slate-900 border border-white rounded-lg shadow-lg p-10 w-full max-w-2xl">
-        <div ref={outputRef} className="h-[20rem] overflow-y-auto whitespace-pre-wrap mb-1 pr-10">
+      <div className="bg-slate-900  shadow-lg px-10 w-full max-w-2xl h-[36rem] overflow-y-auto whitespace-pre-wrap">
+        <div ref={outputRef}>
           {history.map((entry, idx) => (
             <div key={idx} className="mb-6">
-              <div className="text-blue-200 text-base">$ {entry.command}</div>
-              <div className="text-white text-base">{entry.response}</div>
+              <div className="text-blue-200 text-1xl">$ {entry.command}</div>
+              <div className="text-white text-1xl">{entry.response}</div>
             </div>
           ))}
+          <form
+            onSubmit={handleCommand}
+            className="flex items-center mt-6"
+          >
+            <span className="text-blue-200 mr-4 text-1xl">$</span>
+            <input
+              className="flex-1 bg-transparent outline-none text-blue-200 caret-blue-200 text-1xl py-0 animate-pulse"
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              autoFocus
+            />
+          </form>
         </div>
-        <form
-          onSubmit={handleCommand}
-          className="flex items-center border-t border-blue-200"
-          style={{ height: "2rem" }} // or another desired height
-        >
-          <span className="text-blue-200 mr-4 pt-6 text-base">$</span>
-          <input
-            className="flex-1 bg-transparent outline-none text-blue-200 placeholder-blue-200 text-base pt-6"
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Enter command..."
-            autoFocus
-          />
-        </form>
       </div>
     </div>
   );
 }
-
