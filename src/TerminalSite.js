@@ -42,7 +42,15 @@ export default function TerminalSite() {
   const handleCommand = (e) => {
     e.preventDefault();
     const trimmed = input.trim().toLowerCase();
-    const response = commands[trimmed] || `command not found: ${trimmed}`;
+    const response =
+    commands[trimmed] || (
+      <>
+        command not found: {trimmed}
+        <br />
+        Try 'about', 'research', or 'contact'.
+      </>
+    );
+    // const response = commands[trimmed] || `command not found: ${trimmed}`;
     setHistory((prev) => [...prev, { command: input, response }]);
     setInput("");
   };
