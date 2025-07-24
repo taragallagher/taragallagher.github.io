@@ -10,9 +10,9 @@ const commands = {
   ),
   
   research:  (
-    <>Water controls how energy moves throughout the climate system. In part because land surfaces can dry out, continents respond to changes quite differently than oceans do -- but the study of climate often overlooks land-specific dynamics.
+    <>Water controls how energy moves throughout the climate system. In part because land surfaces can dry out, continents respond to changes quite differently than oceans do &mdash; but land-based climate systems remain understudied. Questions I think about include:
      <br /> <br />- How will warming alter continental water and energy budgets? <br />- Do soils dry with warming, and if so, why?<br />- How does precipitation change over land, and why is the response different over oceans?<br /> <br />
-      These are a handful of the questions I think about day to day. Our work was recently featured as a <a href="https://eos.org/research-spotlights/simplicity-may-be-the-key-to-understanding-soil-moisture" className="underline text-blue-200" target="_blank" rel="noopener noreferrer">
+      Recent work was featured as a <a href="https://eos.org/research-spotlights/simplicity-may-be-the-key-to-understanding-soil-moisture" className="underline text-blue-200" target="_blank" rel="noopener noreferrer">
        Research Spotlight</a> in Eos, and you can find additional publications at my <a href="https://scholar.google.com/citations?user=xqLNGGEAAAAJ&hl=en" className="underline text-blue-200" target="_blank" rel="noopener noreferrer">
        Google Scholar</a>.
     </>
