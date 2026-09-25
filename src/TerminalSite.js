@@ -440,11 +440,15 @@ export default function TerminalSite() {
   return (
     <div className="h-[100dvh] bg-brand-darkblue text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-sm">
       <div className="shrink-0 flex flex-col items-center mb-3 w-full max-w-3xl px-6">
-        <h1 className="text-4xl font-normal mb-6">tara gallagher</h1>
+        {/* mobile-first: the header is compact by default and only grows at
+            md, so it doesn't eat half a phone screen */}
+        <h1 className="text-3xl md:text-4xl font-normal mb-3 md:mb-6">
+          tara gallagher
+        </h1>
         <img
           src="cat.jpg"
           alt="Tara w cat"
-          className="w-60 h-60 rounded-full border-2 border-white mb-1"
+          className="w-32 h-32 md:w-60 md:h-60 rounded-full border-2 border-white mb-1"
         />
         <p className="text-center text-white text-sm">
           hi, i'm tara. welcome! type{" "}
