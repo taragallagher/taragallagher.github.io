@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The dark background lives on the app's own div, so anything outside it —
+   iOS overscroll bounce, or the gap when 100dvh resizes as the mobile address
+   bar collapses — showed through as white. Setting it on html propagates the
+   colour to the whole viewport canvas. */
+html,
+body,
+#root {
+  @apply bg-slate-900;
+}
+
+html {
+  overscroll-behavior: none;
+}
+
 /* white circle in place of the mouse pointer. Inline SVG rather than a
    JS-driven element so it tracks the pointer natively with no lag.
    The 7,7 hotspot centres the circle on the real pointer position. */
