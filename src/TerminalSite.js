@@ -57,6 +57,79 @@ async function fetchWeather() {
   );
 }
 
+// ── loading animation ─────────────────────────────────────────────────────────
+const SPINNER = ["|", "/", "-", "\\"];
+const BAR_WIDTH = 24;
+
+// minimum time the loader stays on screen, so a fast response still reads as a
+// download rather than a flicker
+const MIN_LOAD_MS = 900;
+
+const WEATHER_STEPS = [
+  { label: "resolving location", from: 0, to: 30 },
+  { label: "connecting to api.open-meteo.com", from: 30, to: 62 },
+  { label: "receiving forecast", from: 62, to: 100, bar: true },
+];
+
+function bar(pct) {
+  const filled = Math.round((pct / 100) * BAR_WIDTH);
+  return `[${"#".repeat(filled)}${".".repeat(BAR_WIDTH - filled)}] ${String(pct).padStart(3)}%`;
+}
+
+// renders the step list for a given overall progress: finished steps collapse to
+// "done", the current one animates, later ones aren't printed yet
+function StepLines({ pct, frame }) {
+  return (
+    <>
+      {WEATHER_STEPS.map((step) => {
+        if (pct < step.from) return null;
+        const done = pct >= step.to;
+        const local = done
+          ? 100
+          : Math.round(((pct - step.from) / (step.to - step.from)) * 100);
+        return (
+          <div key={step.label}>
+            {step.bar ? (
+              <>
+                {step.label} {bar(local)}
+              </>
+            ) : (
+              <>
+                {done ? "✓" : SPINNER[frame % SPINNER.length]} {step.label}
+                {done ? "... done" : "..."}
+              </>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// climbs on its own up to 94% and waits there for the real response to land
+function WeatherLoader() {
+  const [pct, setPct] = useState(0);
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFrame((f) => f + 1);
+      setPct((p) => Math.min(94, p + 2 + Math.floor(Math.random() * 6)));
+    }, 90);
+    return () => clearInterval(id);
+  }, []);
+
+  return <StepLines pct={pct} frame={frame} />;
+}
+
+// keeps the loader up for at least MIN_LOAD_MS from `started`
+function holdLoader(started) {
+  const remaining = MIN_LOAD_MS - (Date.now() - started);
+  return remaining > 0
+    ? new Promise((resolve) => setTimeout(resolve, remaining))
+    : Promise.resolve();
+}
+
 // ── static commands ───────────────────────────────────────────────────────────
 const commands = {
   help: (
@@ -81,7 +154,7 @@ const commands = {
       Before graduate school, I worked at a{" "}
       <a
         href="https://str.us/"
-        className="underline text-blue-200"
+        className="underline text-terminal"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -111,7 +184,7 @@ const commands = {
       Recent work was featured as a{" "}
       <a
         href="https://eos.org/research-spotlights/simplicity-may-be-the-key-to-understanding-soil-moisture"
-        className="underline text-blue-200"
+        className="underline text-terminal"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -120,7 +193,7 @@ const commands = {
       in Eos, and you can find additional publications at my{" "}
       <a
         href="https://scholar.google.com/citations?user=xqLNGGEAAAAJ&hl=en"
-        className="underline text-blue-200"
+        className="underline text-terminal"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -137,7 +210,7 @@ const commands = {
       LinkedIn:{" "}
       <a
         href="https://www.linkedin.com/in/tara-e-gallagher/"
-        className="underline text-blue-200"
+        className="underline text-terminal"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -147,7 +220,7 @@ const commands = {
       {/* GitHub:{" "}
       <a
         href="https://github.com/taragallagher"
-        className="underline text-blue-200"
+        className="underline text-terminal"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -184,7 +257,8 @@ export default function TerminalSite() {
   const [input, setInput] = useState("");
   const [commandHistory, setCommandHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const outputRef = useRef(null);
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
 
   const addToHistory = useCallback((command, response) => {
     setHistory((prev) => [...prev, { command, response }]);
@@ -208,23 +282,37 @@ export default function TerminalSite() {
 
     // handle async weather command
     if (trimmed === "weather") {
-      addToHistory(input, <>fetching weather...</>);
+      addToHistory(input, <WeatherLoader />);
+
+      const replaceLast = (response) =>
+        setHistory((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { command: input, response };
+          return updated;
+        });
+
+      const started = Date.now();
       try {
         const weatherResponse = await fetchWeather();
-        setHistory((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { command: input, response: weatherResponse };
-          return updated;
-        });
+        await holdLoader(started);
+        // freeze the transcript at 100% so the scrollback keeps the download log
+        replaceLast(
+          <>
+            <StepLines pct={100} frame={0} />
+            <br />
+            {weatherResponse}
+          </>
+        );
       } catch {
-        setHistory((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            command: input,
-            response: <>could not fetch weather. try again later.</>,
-          };
-          return updated;
-        });
+        await holdLoader(started);
+        replaceLast(
+          <>
+            <div>{"✓"} resolving location... done</div>
+            <div>{"✗"} connecting to api.open-meteo.com... failed</div>
+            <br />
+            could not fetch weather. try again later.
+          </>
+        );
       }
       return;
     }
@@ -261,18 +349,25 @@ export default function TerminalSite() {
     }
   };
 
+  // clicking anywhere in the box focuses the prompt, like a real terminal —
+  // but not when following a link, and not when the click ended a text
+  // selection, which focusing would immediately clear
+  const focusPrompt = (e) => {
+    if (e.target.closest("a")) return;
+    if (window.getSelection()?.toString()) return;
+    inputRef.current?.focus();
+  };
+
+  // scroll the terminal box only — scrollIntoView would also scroll the window,
+  // yanking the page down. No-op until output actually overflows the box.
   useEffect(() => {
-    if (outputRef.current) {
-      const lastChild = outputRef.current.lastElementChild;
-      if (lastChild) {
-        lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
-    }
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [history]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
-      <div className="flex flex-col items-center mb-3 w-full max-w-3xl px-6">
+    <div className="h-[100dvh] bg-slate-900 text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
+      <div className="shrink-0 flex flex-col items-center mb-3 w-full max-w-3xl px-6">
         <h1 className="text-4xl font-normal mb-6">tara gallagher</h1>
         <img
           src="cat.jpg"
@@ -280,23 +375,32 @@ export default function TerminalSite() {
           className="w-60 h-60 rounded-full border-2 border-white mb-1"
         />
         <p className="text-center text-white text-base">
-          Welcome! Type 'help' for available commands.
+          hi, i'm tara. welcome! type{" "}
+          <span className="text-terminal">'help'</span> for available commands.
         </p>
       </div>
-      <div className="bg-slate-900 shadow-lg px-10 w-full max-w-2xl h-[36rem] overflow-y-auto whitespace-pre-wrap">
-        <div ref={outputRef}>
+      <div
+        ref={scrollRef}
+        onMouseUp={focusPrompt}
+        className="bg-slate-900 shadow-lg px-10 w-full max-w-3xl flex-1 min-h-[16rem] overflow-y-auto whitespace-pre-wrap"
+      >
+        <div>
           {history.map((entry, idx) => (
             <div key={idx} className="mb-6">
               {entry.command && (
-                <div className="text-blue-200 text-1xl">$ {entry.command}</div>
+                <div className="flex items-center text-terminal text-1xl">
+                  <span className="mr-4">$</span>
+                  <span>{entry.command}</span>
+                </div>
               )}
               <div className="text-white text-1xl">{entry.response}</div>
             </div>
           ))}
-          <form onSubmit={handleCommand} className="flex items-center mt-6">
-            <span className="text-blue-200 mr-4 text-1xl">$</span>
+          <form onSubmit={handleCommand} className="flex items-center">
+            <span className="text-terminal mr-4 text-1xl">$</span>
             <input
-              className="flex-1 bg-transparent outline-none text-blue-200 caret-blue-200 text-1xl py-0 animate-pulse"
+              ref={inputRef}
+              className="flex-1 bg-transparent outline-none text-terminal caret-terminal text-1xl py-0 animate-pulse"
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
