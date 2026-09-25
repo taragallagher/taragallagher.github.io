@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Children, useState, useRef, useEffect, useCallback } from "react";
 
 // ── weather helper ────────────────────────────────────────────────────────────
 const WMO_CODES = {
@@ -130,61 +130,99 @@ function holdLoader(started) {
     : Promise.resolve();
 }
 
+// a command name wherever it's mentioned in prose or listed
+const Cmd = ({ children }) => (
+  <span className="text-brand-teal">{children}</span>
+);
+
+// Prints its children one at a time, the way a shell streams output: each
+// line lands instantly and whole. No fading — a terminal has no opacity.
+function Printer({ children, interval = 150 }) {
+  const items = Children.toArray(children);
+  const [shown, setShown] = useState(() =>
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+      ? items.length
+      : 1
+  );
+
+  useEffect(() => {
+    if (shown >= items.length) return;
+    const id = setTimeout(() => setShown((n) => n + 1), interval);
+    return () => clearTimeout(id);
+  }, [shown, items.length, interval]);
+
+  // follow the output down as it prints, otherwise long results stream in
+  // below the fold
+  useEffect(() => {
+    const box = document.querySelector("[data-terminal]");
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [shown]);
+
+  return <>{items.slice(0, shown)}</>;
+}
+
 // ── static commands ───────────────────────────────────────────────────────────
 const commands = {
   help: (
     <>
       available commands:
-      <br />— about
-      <br />— work
-      <br />— contact
-      <br />— weather
-      <br />— clear
+      <br />— <Cmd>about</Cmd>
+      <br />— <Cmd>work</Cmd>
+      <br />— <Cmd>contact</Cmd>
+      <br />— <Cmd>weather</Cmd>
+      <br />— <Cmd>clear</Cmd>
       <br />
     </>
   ),
 
   about: (
-    <>
-      I recently received my PhD studying climate dynamics with Kaighin McColl
-      at Harvard University, and am now a post-doctoral fellow in the
-      Department of Earth &amp; Planetary Sciences. My work focuses on climate
-      over land: in particular, how warming impacts the terrestrial water cycle.
-      <br /> <br />
-      Before graduate school, I worked at a{" "}
-      <a
-        href="https://str.us/"
-        className="underline text-terminal"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        tech company
-      </a>{" "}
-      in Boston and studied physics and music at Dartmouth
-      College. I love to ski, read books, sing in choirs, and go on adventures,
-      especially around Burlington, Vermont, where I grew up.
-      <br /> <br />
-      I am currently exploring opportunities at the intersection of climate science and industry (ideally in Europe). Please don't hesitate to reach out!
-    </>
+    <Printer>
+      <p>
+        I recently received my PhD studying climate dynamics with Kaighin McColl
+        at Harvard University, and am now a post-doctoral fellow in the
+        Department of Earth &amp; Planetary Sciences. My work focuses on climate
+        over land: in particular, how warming impacts the terrestrial water cycle.
+      </p>
+      <p className="mt-4">
+        Before graduate school, I worked at a{" "}
+        <a
+          href="https://str.us/"
+          className="underline text-brand-orange"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          tech company
+        </a>{" "}
+        in Boston and studied physics and music at Dartmouth
+        College. I love to ski, read books, sing in choirs, and go on adventures,
+        especially around Burlington, Vermont, where I grew up.
+      </p>
+      <p className="mt-4">
+        I am currently exploring opportunities at the intersection of climate science and industry (ideally in Europe). Please don't hesitate to reach out!
+      </p>
+    </Printer>
   ),
 
   work: (
-    <>
-      Water controls how energy moves throughout the climate system. In part
-      because land surfaces can dry out, continents respond to changes quite
-      differently than oceans do &mdash; but land-based climate systems remain
-      understudied. Questions I think about include:
-      <br /><br />
-    <ul className="list-none space-y-2 ml-4">
-      <li>— Do soils dry with warming, and if so, why?</li>
-      <li>— How does precipitation respond to warming over land, and why is the response different over oceans?</li>
-      <li>— How will warming alter continental water and energy budgets?</li>
-      </ul>
-    <br />
+    <Printer>
+      <p>
+        Water controls how energy moves throughout the climate system. In part
+        because land surfaces can dry out, continents respond to changes quite
+        differently than oceans do &mdash; but land-based climate systems remain
+        understudied. Questions I think about include:
+      </p>
+      <p className="ml-4 mt-4">— Do soils dry with warming, and if so, why?</p>
+      <p className="ml-4 mt-2">
+        — How does precipitation respond to warming over land, and why is the response different over oceans?
+      </p>
+      <p className="ml-4 mt-2">
+        — How will warming alter continental water and energy budgets?
+      </p>
+      <p className="mt-4">
       Recent work was featured as a{" "}
       <a
         href="https://eos.org/research-spotlights/simplicity-may-be-the-key-to-understanding-soil-moisture"
-        className="underline text-terminal"
+        className="underline text-brand-orange"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -193,14 +231,15 @@ const commands = {
       in Eos, and you can find additional publications at my{" "}
       <a
         href="https://scholar.google.com/citations?user=xqLNGGEAAAAJ&hl=en"
-        className="underline text-terminal"
+        className="underline text-brand-orange"
         target="_blank"
         rel="noopener noreferrer"
       >
         Google Scholar
       </a>
       .
-    </>
+      </p>
+    </Printer>
   ),
 
   contact: (
@@ -210,7 +249,7 @@ const commands = {
       LinkedIn:{" "}
       <a
         href="https://www.linkedin.com/in/tara-e-gallagher/"
-        className="underline text-terminal"
+        className="underline text-brand-orange"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -220,7 +259,7 @@ const commands = {
       {/* GitHub:{" "}
       <a
         href="https://github.com/taragallagher"
-        className="underline text-terminal"
+        className="underline text-brand-orange"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -229,7 +268,11 @@ const commands = {
     </>
   ),
 
-  hello: <>Why hello! Learn more through 'help'.</>,
+  hello: (
+    <>
+      Why hello! Learn more through <Cmd>'help'</Cmd>.
+    </>
+  ),
 
   // ── easter eggs ──────────────────────────────────────────────────────────────
   sudo: <>nice try.</>,
@@ -238,7 +281,8 @@ const commands = {
 
   ls: (
     <>
-      about &nbsp; work &nbsp; contact &nbsp; weather &nbsp; clear
+      <Cmd>about</Cmd> &nbsp; <Cmd>work</Cmd> &nbsp; <Cmd>contact</Cmd> &nbsp;{" "}
+      <Cmd>weather</Cmd> &nbsp; <Cmd>clear</Cmd>
     </>
   ),
 
@@ -251,14 +295,31 @@ const commands = {
   weather: "async",
 };
 
+// shared by the echoed history lines and the live input, so the two can never
+// drift out of alignment
+function Prompt() {
+  return (
+    <>
+      <span className="text-brand-yellow">guest@tara</span>
+      <span className="ml-2 text-brand-orange">~</span>
+      <span className="ml-2 text-brand-orange">$</span>
+    </>
+  );
+}
+
 // ── component ─────────────────────────────────────────────────────────────────
 export default function TerminalSite() {
   const [history, setHistory] = useState([]);
   const [input, setInput] = useState("");
   const [commandHistory, setCommandHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [caret, setCaret] = useState(0);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+
+  // the real <input> is transparent and only captures keystrokes; the visible
+  // line is a mirror of its value, so `caret` has to follow selectionStart
+  const syncCaret = (e) => setCaret(e.target.selectionStart ?? 0);
 
   const addToHistory = useCallback((command, response) => {
     setHistory((prev) => [...prev, { command, response }]);
@@ -272,6 +333,7 @@ export default function TerminalSite() {
     if (trimmed === "clear") {
       setHistory([]);
       setInput("");
+      setCaret(0);
       setHistoryIndex(-1);
       return;
     }
@@ -279,6 +341,7 @@ export default function TerminalSite() {
     setCommandHistory((prev) => [...prev, trimmed]);
     setHistoryIndex(-1);
     setInput("");
+    setCaret(0);
 
     // handle async weather command
     if (trimmed === "weather") {
@@ -323,11 +386,20 @@ export default function TerminalSite() {
         <>
           command not found: {trimmed}
           <br />
-          Try 'help' for a list of available commands.
+          Try <Cmd>'help'</Cmd> for a list of available commands.
         </>
       );
 
     addToHistory(input, response);
+  };
+
+  // recalling a command puts the caret at the end of it, as a shell does
+  const recall = (value) => {
+    setInput(value);
+    setCaret(value.length);
+    requestAnimationFrame(() => {
+      inputRef.current?.setSelectionRange(value.length, value.length);
+    });
   };
 
   const handleKeyDown = (e) => {
@@ -335,13 +407,13 @@ export default function TerminalSite() {
       e.preventDefault();
       const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
       setHistoryIndex(newIndex);
-      setInput(commandHistory[commandHistory.length - 1 - newIndex] || "");
+      recall(commandHistory[commandHistory.length - 1 - newIndex] || "");
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       const newIndex = Math.max(historyIndex - 1, -1);
       setHistoryIndex(newIndex);
-      setInput(
+      recall(
         newIndex === -1
           ? ""
           : commandHistory[commandHistory.length - 1 - newIndex]
@@ -366,7 +438,7 @@ export default function TerminalSite() {
   }, [history]);
 
   return (
-    <div className="h-[100dvh] bg-slate-900 text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
+    <div className="h-[100dvh] bg-brand-darkblue text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-base">
       <div className="shrink-0 flex flex-col items-center mb-3 w-full max-w-3xl px-6">
         <h1 className="text-4xl font-normal mb-6">tara gallagher</h1>
         <img
@@ -376,37 +448,54 @@ export default function TerminalSite() {
         />
         <p className="text-center text-white text-base">
           hi, i'm tara. welcome! type{" "}
-          <span className="text-terminal">'help'</span> for available commands.
+          <span className="text-brand-teal">'help'</span> for available commands.
         </p>
       </div>
       <div
         ref={scrollRef}
+        data-terminal
         onMouseUp={focusPrompt}
-        className="bg-slate-900 shadow-lg px-10 w-full max-w-3xl flex-1 min-h-[16rem] overflow-y-auto whitespace-pre-wrap"
+        className="bg-brand-darkblue px-10 w-full max-w-3xl flex-1 min-h-[16rem] overflow-y-auto whitespace-pre-wrap text-base"
       >
         <div>
           {history.map((entry, idx) => (
             <div key={idx} className="mb-6">
               {entry.command && (
-                <div className="flex items-center text-terminal text-1xl">
-                  <span className="mr-4">$</span>
-                  <span>{entry.command}</span>
+                <div className="flex items-center">
+                  <Prompt />
+                  <span className="ml-2 text-brand-teal">{entry.command}</span>
                 </div>
               )}
-              <div className="text-white text-1xl">{entry.response}</div>
+              <div className="text-white">{entry.response}</div>
             </div>
           ))}
           <form onSubmit={handleCommand} className="flex items-center">
-            <span className="text-terminal mr-4 text-1xl">$</span>
-            <input
-              ref={inputRef}
-              className="flex-1 bg-transparent outline-none text-terminal caret-terminal text-1xl py-0 animate-pulse"
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
+            <Prompt />
+            <div className="relative flex-1 ml-2">
+              {/* visible mirror of the input: a block cursor sits on the
+                  character at the caret and inverts it, the way a shell does */}
+              <div className="whitespace-pre text-brand-teal" aria-hidden="true">
+                {input.slice(0, caret)}
+                <span className="animate-blink bg-brand-teal text-brand-darkblue">
+                  {input.slice(caret, caret + 1) || " "}
+                </span>
+                {input.slice(caret + 1)}
+              </div>
+              <input
+                ref={inputRef}
+                className="absolute inset-0 w-full bg-transparent outline-none opacity-0 py-0"
+                type="text"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  syncCaret(e);
+                }}
+                onSelect={syncCaret}
+                onKeyUp={syncCaret}
+                onKeyDown={handleKeyDown}
+                autoFocus
+              />
+            </div>
           </form>
         </div>
       </div>

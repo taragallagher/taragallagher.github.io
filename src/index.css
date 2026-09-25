@@ -9,11 +9,19 @@
 html,
 body,
 #root {
-  @apply bg-slate-900;
+  @apply bg-brand-darkblue;
 }
 
 html {
   overscroll-behavior: none;
+}
+
+/* respect the OS "reduce motion" setting — the cursor stops blinking, and
+   Printer prints its output in one go rather than streaming it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink {
+    animation: none;
+  }
 }
 
 /* white circle in place of the mouse pointer. Inline SVG rather than a
