@@ -178,13 +178,12 @@ const commands = {
   about: (
     <Printer>
       <p>
-        I recently received my PhD studying climate dynamics with Kaighin McColl
-        at Harvard University, and am now a post-doctoral fellow in the
-        Department of Earth &amp; Planetary Sciences. My work focuses on climate
+        I am a postdoctoral fellow in the
+        Department of Earth &amp; Planetary Sciences at Harvard University, advised by Kaighin McColl. My work focuses on climate
         over land: in particular, how warming impacts the terrestrial water cycle.
       </p>
       <p className="mt-4">
-        Before graduate school, I worked at a{" "}
+        Before graduate school I worked at a{" "}
         <a
           href="https://str.us/"
           className="underline text-brand-orange"
@@ -197,9 +196,6 @@ const commands = {
         College. I love to ski, read books, sing in choirs, and go on adventures,
         especially around Burlington, Vermont, where I grew up.
       </p>
-      <p className="mt-4">
-        I am currently exploring opportunities at the intersection of climate science and industry (ideally in Europe). Please don't hesitate to reach out!
-      </p>
     </Printer>
   ),
 
@@ -208,7 +204,7 @@ const commands = {
       <p>
         Water controls how energy moves throughout the climate system. In part
         because land surfaces can dry out, continents respond to changes quite
-        differently than oceans do &mdash; but land-based climate systems remain
+        differently than oceans do, but land-based climate systems remain
         understudied. Questions I think about include:
       </p>
       <p className="ml-4 mt-4">— Do soils dry with warming, and if so, why?</p>
@@ -274,7 +270,6 @@ const commands = {
     </>
   ),
 
-  // ── easter eggs ──────────────────────────────────────────────────────────────
   sudo: <>nice try.</>,
 
   vim: <>you're on your own.</>,
@@ -286,7 +281,7 @@ const commands = {
     </>
   ),
 
-  whoami: <>I'm Tara, but who are you?</>,
+  whoami: <>i'm tara, but who are you?</>,
 
   pwd: <>/home/tara/planet-earth</>,
 
