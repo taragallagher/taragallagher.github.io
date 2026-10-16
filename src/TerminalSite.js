@@ -362,20 +362,24 @@ const Cmd = ({ children }) => (
   <span className="text-brand-teal">{children}</span>
 );
 
-// Prints its children one at a time, the way a shell streams output
-function Printer({ children, interval = 150 }) {
+// Prints its children one at a time, the way a shell streams output.
+// `aside` prints last, but sits ahead of the children in the DOM (hidden, not
+// absent) so a floated aside can have the text wrap around it from the start
+// without the text reflowing when it appears
+function Printer({ children, aside, interval = 150 }) {
   const items = Children.toArray(children);
+  const total = items.length + (aside ? 1 : 0);
   const [shown, setShown] = useState(() =>
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-      ? items.length
+      ? total
       : 1
   );
 
   useEffect(() => {
-    if (shown >= items.length) return;
+    if (shown >= total) return;
     const id = setTimeout(() => setShown((n) => n + 1), interval);
     return () => clearTimeout(id);
-  }, [shown, items.length, interval]);
+  }, [shown, total, interval]);
 
   // follow the output down as it prints, otherwise long results stream in
   // below the fold
@@ -384,7 +388,14 @@ function Printer({ children, interval = 150 }) {
     if (box) box.scrollTop = box.scrollHeight;
   }, [shown]);
 
-  return <>{items.slice(0, shown)}</>;
+  return (
+    <>
+      {aside && (
+        <div className={shown > items.length ? "" : "invisible"}>{aside}</div>
+      )}
+      {items.slice(0, shown)}
+    </>
+  );
 }
 
 // ── static commands ───────────────────────────────────────────────────────────
@@ -402,8 +413,20 @@ const commands = {
     </>
   ),
 
+  // the photo floats right and the text wraps around it; shape-outside lets
+  // the lines follow the circle instead of its square box. flow-root keeps
+  // the float inside this output, so the next prompt never wraps beside it
   about: (
-    <Printer>
+    <div className="flow-root">
+    <Printer
+      aside={
+        <img
+          src="cat.jpg"
+          alt="Tara w cat"
+          className="float-right w-28 h-28 md:w-52 md:h-52 ml-4 mb-2 rounded-full border-2 border-white [shape-outside:circle()]"
+        />
+      }
+    >
       <p>
         I am a postdoctoral fellow in the
         Department of Earth &amp; Planetary Sciences at Harvard University, advised by Kaighin McColl. My work focuses on climate
@@ -424,6 +447,7 @@ const commands = {
         especially around Burlington, Vermont, where I grew up.
       </p>
     </Printer>
+    </div>
   ),
 
   work: (
@@ -540,6 +564,9 @@ export default function TerminalSite() {
   const [caret, setCaret] = useState(0);
   // 0 = no snow; each `snow` bumps it to start another storm on the same pile
   const [storm, setStorm] = useState(0);
+  // true while a command is still printing; the prompt is hidden until it's
+  // done, as a shell doesn't give you a new prompt mid-command
+  const [busy, setBusy] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -572,6 +599,7 @@ export default function TerminalSite() {
 
     // handle async weather command
     if (trimmed === "weather") {
+      setBusy(true);
       addToHistory(input, <WeatherLoader />);
 
       const replaceLast = (response) =>
@@ -604,6 +632,7 @@ export default function TerminalSite() {
           </>
         );
       }
+      setBusy(false);
       return;
     }
 
@@ -659,6 +688,11 @@ export default function TerminalSite() {
     inputRef.current?.focus();
   };
 
+  // the hidden prompt lost focus, so hand it back once the command finishes
+  useEffect(() => {
+    if (!busy) inputRef.current?.focus();
+  }, [busy]);
+
   // scroll the terminal box only — scrollIntoView would also scroll the window,
   // yanking the page down. No-op until output actually overflows the box.
   useEffect(() => {
@@ -669,19 +703,16 @@ export default function TerminalSite() {
   return (
     <div className="h-[100dvh] bg-brand-darkblue text-white rounded-none font-mono p-5 md:px-24 pb-10 flex flex-col items-center text-sm">
       {storm > 0 && <Snow storm={storm} />}
-      <div className="shrink-0 flex flex-col items-center mb-3 w-full max-w-3xl px-6">
+      {/* the photo lives in `about` now, so the header is just the name.
+          px-10 matches the terminal box, so it lines up with the prompt */}
+      <div className="shrink-0 flex flex-col items-start mb-3 w-full max-w-3xl px-10">
         {/* mobile-first: the header is compact by default and only grows at
             md, so it doesn't eat half a phone screen */}
-        <h1 className="text-3xl md:text-4xl font-normal mb-3 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-wider uppercase mb-1">
           tara gallagher
         </h1>
-        <img
-          src="cat.jpg"
-          alt="Tara w cat"
-          className="w-32 h-32 md:w-60 md:h-60 rounded-full border-2 border-white mb-1"
-        />
-        <p className="text-center text-white text-sm">
-          hi, i'm tara. welcome! type{" "}
+        <p className="text-white text-sm">
+          welcome! type{" "}
           <span className="text-brand-teal">'help'</span> for available commands.
         </p>
       </div>
@@ -703,7 +734,10 @@ export default function TerminalSite() {
               <div className="text-white">{entry.response}</div>
             </div>
           ))}
-          <form onSubmit={handleCommand} className="flex items-center">
+          <form
+            onSubmit={handleCommand}
+            className={`flex items-center ${busy ? "hidden" : ""}`}
+          >
             <Prompt />
             <div className="relative flex-1 ml-2">
               {/* visible mirror of the input: a block cursor sits on the
